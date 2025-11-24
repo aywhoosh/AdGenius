@@ -31,36 +31,30 @@ graph TD
 
 ## Core Features
 
-1. Stateful CRUD Operations
+1. **Stateful CRUD Operations**
 
-Unlike stateless FAQ bots, this agent maintains context across multi-turn flows to manage campaign resources.
+   Unlike stateless FAQ bots, this agent maintains context across multi-turn flows to manage campaign resources.
 
-    Create: Captures and validates multi-slot parameters (Campaign Name, Budget, Geo-Targeting) before writing to Firestore.
+   - **Create**: Captures and validates multi-slot parameters (Campaign Name, Budget, Geo-Targeting) before writing to Firestore.
+   - **Read**: Fetches real-time performance metrics (CTR, Spend, Conversions).
+   - **Update**: Executing atomic writes to modify campaign budgets via authenticated intents.
 
-    Read: Fetches real-time performance metrics (CTR, Spend, Conversions).
+2. **Hybrid NLU Routing**
 
-    Update: Executing atomic writes to modify campaign budgets via authenticated intents.
+   The system employs a router pattern to handle disparate query types:
 
-2. Hybrid NLU Routing
+   - **Deterministic**: High-risk actions (e.g., budget changes) are handled via strict intent matching and Python logic.
+   - **Probabilistic (RAG)**: Compliance and policy queries are routed to Vertex AI Data Stores, synthesizing responses from ingested technical documentation (PDFs).
 
-The system employs a router pattern to handle disparate query types:
+3. **CI/CD & Reliability**
 
-    Deterministic: High-risk actions (e.g., budget changes) are handled via strict intent matching and Python logic.
-
-    Probabilistic (RAG): Compliance and policy queries are routed to Vertex AI Data Stores, synthesizing responses from ingested technical documentation (PDFs).
-
-3. CI/CD & Reliability
-
-    Infrastructure: Deployed via Google Cloud Functions (Gen 2).
-
-    Pipeline: GitHub Actions workflow configured for automated testing and deployment upon push to the main branch.
-
-    Normalization: Custom middleware handles input sanitization and case-insensitivity to ensure data integrity.
+   - **Infrastructure**: Deployed via Google Cloud Functions (Gen 2).
+   - **Pipeline**: GitHub Actions workflow configured for automated testing and deployment upon push to the main branch.
+   - **Normalization**: Custom middleware handles input sanitization and case-insensitivity to ensure data integrity.
 
 ## Repository Structure
 
-Plaintext
-
+```plaintext
 adgenius-cx-agent/
 ├── .github/workflows/
 │   └── deploy.yml          # GitHub Actions deployment configuration
@@ -70,40 +64,44 @@ adgenius-cx-agent/
 │   └── test_webhook.py     # Unit tests for intent handlers
 ├── requirements.txt        # Python dependencies
 └── README.md               # Project documentation
+```
 
 ## Setup and Installation
 
 ### Prerequisites
 
-    Google Cloud Platform project with Billing enabled.
-
-    Google Cloud SDK (gcloud) installed and authenticated.
-
-    Python 3.11+.
+- Google Cloud Platform project with Billing enabled.
+- Google Cloud SDK (gcloud) installed and authenticated.
+- Python 3.11+.
 
 ### Local Development
 
-    Clone the repository
-    Bash
+1. Clone the repository
 
-git clone [https://github.com/aywhoosh/adgenius-cx-agent.git](https://github.com/aywhoosh/adgenius-cx-agent.git)
+```bash
+git clone https://github.com/aywhoosh/adgenius-cx-agent.git
 cd adgenius-cx-agent
+```
 
-Install dependencies
-Bash
+2. Install dependencies
 
+```bash
 pip install -r requirements.txt
+```
 
-Run with Functions Framework This simulates the Cloud Functions environment locally.
-Bash
+3. Run with Functions Framework
 
-    functions-framework --target=dialogflow_webhook --debug
+   This simulates the Cloud Functions environment locally.
+
+```bash
+functions-framework --target=dialogflow_webhook --debug
+```
 
 ### Deployment
 
 The project is configured for continuous deployment via GitHub Actions. To deploy manually from the CLI:
-Bash
 
+```bash
 gcloud functions deploy adgenius-fulfillment \
     --gen2 \
     --runtime=python311 \
@@ -112,14 +110,15 @@ gcloud functions deploy adgenius-fulfillment \
     --entry-point=dialogflow_webhook \
     --trigger-http \
     --allow-unauthenticated
+```
 
 ## API Reference
 
 The webhook expects a standard Dialogflow CX JSON payload.
 
-Request Format:
-JSON
+**Request Format:**
 
+```json
 {
   "fulfillmentInfo": {
     "tag": "create_campaign"
@@ -131,6 +130,7 @@ JSON
     }
   }
 }
+```
 
 ## License
 
