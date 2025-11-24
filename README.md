@@ -1,49 +1,49 @@
-# AdGenius: Conversational AI for AdTech Support
+# AdGenius: Enterprise Conversational AI Agent (GCP)
 
-**AdGenius** is a cloud-native conversational agent designed to automate Tier-1 support queries for high-volume advertising accounts. It integrates **Dialogflow CX** for Natural Language Understanding (NLU) with **Google Cloud Functions** for backend fulfillment, simulating a real-world enterprise support environment.
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![Platform](https://img.shields.io/badge/GCP-Serverless-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## 🚀 Project Goal
-To reduce manual workload for Account Managers by automating routine tasks:
-1.  **Performance Retrieval:** Fetching live metrics (CTR, Clicks, Cost) for specific campaigns.
-2.  **Budget Management:** Authenticated budget updates via conversation.
-3.  **Ticket Automation:** Instant creation of support tickets for complex issues.
+> **A full-stack, stateful virtual agent designed to automate Tier-1 advertiser support, budget management (CRUD), and policy compliance using Hybrid NLU.**
 
-## 🛠️ Technical Architecture
-* **Frontend/NLU:** Dialogflow CX (Flow-based conversation design)
-* **Backend Fulfillment:** Google Cloud Functions (Python 3.11)
-* **Integration:** Webhook-based JSON data exchange
-* **Deployment:** Serverless (Cloud Run underlying infrastructure)
+---
 
-## 🧩 Key Features Implemented
+## 📺 Demo Preview
+[![Watch the Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE)
 
-### 1. Context-Aware Intent Handling
-The agent uses `sessionInfo` parameters to maintain context. For example, if a user asks "How is the *Diwali* campaign?" and then says "Increase **its** budget," the agent knows "its" refers to the *Diwali* campaign.
+---
 
-### 2. Dynamic Fulfillment (Webhook)
-Unlike static chatbots, AdGenius logic lives in a Python backend.
-- **Tag-based Routing:** Uses `fulfillmentInfo.tag` to route requests to specific logic blocks (`get_campaign_performance`, `change_budget`).
-- **Case-Insensitive Matching:** Implemented robust string handling to map user input (e.g., "diwali search") to backend keys ("Diwali Search").
+## 💼 Business Problem
+Large-scale advertising platforms face a significant bottleneck: Account Managers spend up to 40% of their time resolving repetitive Tier-1 queries ("What is my budget?", "Why was my ad rejected?").
+**AdGenius** offloads these tasks to an AI agent that is:
+1.  **Transactional:** Can read/write live budget data (not just answer FAQs).
+2.  **Context-Aware:** Remembers campaign details across multi-turn conversations.
+3.  **Omnichannel:** Accessible via Web Chat, Telephony, and API.
 
-### 3. Scalable Entity Management
-Uses a custom `@campaign_name` entity to validate user input before it ever reaches the backend, reducing API load and error rates.
+---
 
-## 💻 How to Run
+## 🏗️ Technical Architecture
 
-### Prerequisites
-* Google Cloud Platform Account
-* Dialogflow CX Agent
+The system utilizes a **Serverless Event-Driven Architecture** on Google Cloud Platform.
 
-### Deployment
-1.  Deploy the backend to Google Cloud Functions:
-    ```bash
-    gcloud functions deploy adgenius-fulfillment \
-    --runtime python311 \
-    --trigger-http \
-    --allow-unauthenticated
-    ```
-2.  Configure the Webhook in Dialogflow CX to point to the trigger URL.
-3.  Enable the webhook on specific Routes (e.g., `get_campaign_performance`).
-
-## 📈 Future Improvements
-* **Live API Integration:** Replace the mock Python dictionary with calls to the Google Ads API.
-* **Authentication:** Implement OAuth2 to verify user identity before allowing budget changes.
+```mermaid
+graph TD
+    User((User)) -->|Voice/Text| CX[Dialogflow CX]
+    CX -->|Intent Match| Webhook[Cloud Functions (Python)]
+    CX -->|Fallback/Knowledge| Vertex[Vertex AI (RAG)]
+    
+    Webhook -->|Read/Write| DB[(Firestore NoSQL)]
+    Webhook -->|Logs| Logging[Cloud Logging]
+    
+    Vertex -->|Index| Storage[Cloud Storage (PDFs)]
+    
+    subgraph "Data & Logic Layer"
+    Webhook
+    DB
+    end
+    
+    subgraph "GenAI Layer"
+    Vertex
+    Storage
+    end
