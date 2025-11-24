@@ -24,8 +24,8 @@ jobs:
         uses: google-github-actions/deploy-cloud-functions@v1
         with:
           name: adgenius-fulfillment
-          region: us-central1
+          region: europe-west1  # <--- CHANGED THIS
           entry_point: dialogflow_webhook
           source_dir: .
-          runtime: python311
+          runtime: python311     
           https_trigger_security_level: secure_always
