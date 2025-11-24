@@ -1,141 +1,137 @@
-# AdGenius: Enterprise Conversational AI Agent (GCP)
+# AdGenius
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Platform](https://img.shields.io/badge/GCP-Serverless-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-> **A full-stack, stateful virtual agent designed to automate Tier-1 advertiser support, budget management (CRUD), and policy compliance using Hybrid NLU.**
+AdGenius is a serverless conversational AI architecture designed to automate Tier-1 advertiser support and campaign lifecycle management.
 
----
+It integrates **Dialogflow CX** for state-based NLU, **Google Cloud Functions** for backend fulfillment, and **Firestore** for persistent state management. The system utilizes a hybrid retrieval approach, routing transactional queries to deterministic handlers and unstructured policy queries to a RAG (Retrieval-Augmented Generation) pipeline via **Vertex AI**.
 
-## 📺 Demo Preview
-[![Watch the Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE)
+## System Architecture
 
----
-
-## 💼 Business Problem
-Large-scale advertising platforms face a significant bottleneck: Account Managers spend up to 40% of their time resolving repetitive Tier-1 queries ("What is my budget?", "Why was my ad rejected?").
-**AdGenius** offloads these tasks to an AI agent that is:
-1.  **Transactional:** Can read/write live budget data (not just answer FAQs).
-2.  **Context-Aware:** Remembers campaign details across multi-turn conversations.
-3.  **Omnichannel:** Accessible via Web Chat, Telephony, and API.
-
----
-
-## 🏗️ Technical Architecture
-
-The system utilizes a **Serverless Event-Driven Architecture** on Google Cloud Platform.
+The solution implements an event-driven architecture on Google Cloud Platform.
 
 ```mermaid
 graph TD
-    User((User)) -->|Voice/Text| CX[Dialogflow CX]
-    CX -->|Intent Match| Webhook[Cloud Functions (Python)]
-    CX -->|Fallback/Knowledge| Vertex[Vertex AI (RAG)]
+    User((User)) -->|HTTPS/SIP| CX[Dialogflow CX]
+    CX -->|Webhook Request| CF[Cloud Functions]
     
-    Webhook -->|Read/Write| DB[(Firestore NoSQL)]
-    Webhook -->|Logs| Logging[Cloud Logging]
-    
-    Vertex -->|Index| Storage[Cloud Storage (PDFs)]
-    
-    subgraph "Data & Logic Layer"
-    Webhook
-    DB
+    subgraph "Fulfillment Layer"
+    CF -->|Read/Write| DB[(Firestore)]
+    CF -->|Logs| Log[Cloud Logging]
     end
     
-    subgraph "GenAI Layer"
-    Vertex
-    Storage
+    subgraph "Knowledge Layer"
+    CX -->|Fallback| VA[Vertex AI Agent Builder]
+    VA -->|Indexing| GCS[Cloud Storage]
     end
 ```
 
-### Core Components
-| Component | Function |
-| :--- | :--- |
-| **Dialogflow CX** | Handles State Machines, Flow transition, and Slot Filling. |
-| **Cloud Functions (Gen 2)** | Python 3.11 backend for business logic, data normalization, and API chaining. |
-| **Firestore (Native)** | NoSQL database for persistent campaign state and session history. |
-| **Vertex AI (Search)** | RAG pipeline to parse unstructured technical PDFs (Policy/Compliance). |
-| **GitHub Actions** | CI/CD pipeline for automated testing and deployment to GCP. |
+## Core Features
 
----
+1. Stateful CRUD Operations
 
-## 🚀 Key Features
+Unlike stateless FAQ bots, this agent maintains context across multi-turn flows to manage campaign resources.
 
-### 1. Stateful Campaign Management (CRUD)
-Unlike standard stateless bots, AdGenius manages the lifecycle of a campaign.
-* **Multi-Turn Slot Filling:** Collects Name, Budget, and Location in a specific sequence.
-* **Validation:** Python middleware sanitizes inputs (e.g., converting "diwali sale" -> "Diwali Sale") before DB commits.
-* **Atomic Writes:** Uses Firestore transactions to ensure budget updates do not conflict.
+    Create: Captures and validates multi-slot parameters (Campaign Name, Budget, Geo-Targeting) before writing to Firestore.
 
-### 2. Hybrid NLU (Deterministic + Probabilistic)
-The agent uses a "Router" pattern to decide the best response method:
-* **Deterministic (Rules):** Money/Action-related queries (e.g., "Increase budget") are routed to hard-coded Python functions to ensure 100% accuracy.
-* **Probabilistic (GenAI):** Policy/Advice queries (e.g., "Why is my ad blocked?") are routed to **Vertex AI Data Stores**, which synthesize answers from uploaded PDF manuals using LLMs.
+    Read: Fetches real-time performance metrics (CTR, Spend, Conversions).
 
-### 3. Rich User Experience (UX)
-* **Telephony Gateway:** Enabled Voice IVR support for phone-based support.
-* **Custom Payloads:** Returns Rich Cards (JSON) with visual chips and buttons instead of plain text.
+    Update: Executing atomic writes to modify campaign budgets via authenticated intents.
 
-### 4. CI/CD & DevOps
-* Implemented **GitHub Actions** workflow (`deploy.yml`) to automatically authenticate with GCP Service Accounts and deploy the Cloud Function upon push to `main`.
+2. Hybrid NLU Routing
 
----
+The system employs a router pattern to handle disparate query types:
 
-## 🛠️ Code Structure
+    Deterministic: High-risk actions (e.g., budget changes) are handled via strict intent matching and Python logic.
 
-```bash
-├── .github/workflows
-│   └── deploy.yml       # CI/CD Pipeline for auto-deploy
-├── main.py              # Core logic (Webhook entry point)
-├── requirements.txt     # Dependencies (Flask, Firestore, Functions Framework)
-├── README.md            # Documentation
-└── assets/              # Architecture diagrams and screenshots
-```
+    Probabilistic (RAG): Compliance and policy queries are routed to Vertex AI Data Stores, synthesizing responses from ingested technical documentation (PDFs).
 
----
+3. CI/CD & Reliability
 
-## 💻 Installation & Setup
+    Infrastructure: Deployed via Google Cloud Functions (Gen 2).
+
+    Pipeline: GitHub Actions workflow configured for automated testing and deployment upon push to the main branch.
+
+    Normalization: Custom middleware handles input sanitization and case-insensitivity to ensure data integrity.
+
+## Repository Structure
+
+Plaintext
+
+adgenius-cx-agent/
+├── .github/workflows/
+│   └── deploy.yml          # GitHub Actions deployment configuration
+├── src/
+│   └── main.py             # Application entry point and webhook logic
+├── tests/
+│   └── test_webhook.py     # Unit tests for intent handlers
+├── requirements.txt        # Python dependencies
+└── README.md               # Project documentation
+
+## Setup and Installation
 
 ### Prerequisites
-* Google Cloud Platform Account (Billing Enabled)
-* Dialogflow CX Agent
-* Python 3.11+
+
+    Google Cloud Platform project with Billing enabled.
+
+    Google Cloud SDK (gcloud) installed and authenticated.
+
+    Python 3.11+.
 
 ### Local Development
-1.  **Clone the repo:**
-    ```bash
-    git clone [https://github.com/aywhoosh/adgenius-cx-agent.git](https://github.com/aywhoosh/adgenius-cx-agent.git)
-    cd adgenius-cx-agent
-    ```
 
-2.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+    Clone the repository
+    Bash
 
-3.  **Run locally with Functions Framework:**
-    ```bash
-    functions-framework --target=dialogflow_webhook
-    ```
+git clone [https://github.com/aywhoosh/adgenius-cx-agent.git](https://github.com/aywhoosh/adgenius-cx-agent.git)
+cd adgenius-cx-agent
+
+Install dependencies
+Bash
+
+pip install -r requirements.txt
+
+Run with Functions Framework This simulates the Cloud Functions environment locally.
+Bash
+
+    functions-framework --target=dialogflow_webhook --debug
 
 ### Deployment
-To deploy manually (without CI/CD):
-```bash
+
+The project is configured for continuous deployment via GitHub Actions. To deploy manually from the CLI:
+Bash
+
 gcloud functions deploy adgenius-fulfillment \
---runtime python311 \
---trigger-http \
---allow-unauthenticated
-```
+    --gen2 \
+    --runtime=python311 \
+    --region=us-central1 \
+    --source=. \
+    --entry-point=dialogflow_webhook \
+    --trigger-http \
+    --allow-unauthenticated
 
----
+## API Reference
 
-## 🔮 Future Improvements
-* **Authentication:** Implement OAuth2 to link specific Google accounts to campaign data.
-* **Analytics Dashboard:** Connect BigQuery to Dialogflow logs to visualize "Call Deflection Rate."
-* **Multilingual Support:** Enable Spanish and Hindi locales for global support.
+The webhook expects a standard Dialogflow CX JSON payload.
 
----
+Request Format:
+JSON
 
-**Author:** Ayush Jain
-[LinkedIn](https://linkedin.com/in/byayushjain) | [Portfolio](https://github.com/aywhoosh)
+{
+  "fulfillmentInfo": {
+    "tag": "create_campaign"
+  },
+  "sessionInfo": {
+    "parameters": {
+      "campaign_name": "Summer Sale",
+      "budget": 5000
+    }
+  }
+}
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
